@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lotería de Inteligencia Artificial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chosen Palette: Calm Harmony -->
+    <!-- Application Structure Plan: The application is designed as an interactive game board. The main screen is divided into three parts: 1) A control panel to start/reset the game and call the next card. 2) A central display for the currently "called" card, showing its name, icon, and "canto". 3) An interactive grid representing the full 54-card deck. Below this game area, a detailed section displays the expert analysis for the selected card. This structure supports both linear gameplay (calling cards sequentially) and non-linear exploration (clicking any card on the grid to learn about it). Thematic filters are included to allow users to explore concepts by category, enhancing the educational value. This design was chosen to transform the static report into a dynamic, engaging, and multi-purpose learning tool that is both a game and a reference guide. -->
+    <!-- Visualization & Content Choices: Report Info: 54 AI concepts with names, "cantos", and detailed analysis, grouped by theme. Goal: Create an interactive game and educational tool. Viz/Presentation Method: The primary visualization is the interactive 54-card grid, which organizes all concepts. Each card is a button that reveals detailed information. A central display highlights the active card. Simple, abstract icons for each concept are generated dynamically using the HTML Canvas API, avoiding static images or SVG. Detailed text is presented in a dedicated, scrollable section. Interaction: Users can play a guided game ("Siguiente Carta"), explore freely by clicking any card on the grid, or filter the grid by category. Justification: This approach makes the content highly interactive and explorable from multiple angles (gameplay, free exploration, thematic filtering), which is more engaging than a linear document. Library/Method: Vanilla JavaScript for all logic and state management. Tailwind CSS for styling. HTML Canvas for dynamic icon generation. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .card-grid-item {
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .card-grid-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        .card-grid-item.called {
+            opacity: 0.4;
+            background-color: #e5e7eb;
+            transform: none;
+        }
+        .card-grid-item.active {
+            border-color: #3b82f6;
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.2);
+        }
+        .card-grid-item.highlight {
+            border-color: #f59e0b;
+            background-color: #fef3c7;
+        }
+        .btn-primary {
+            transition: all 0.2s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+        .canto-text {
+            font-style: italic;
+            font-family: serif;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Lora:ital,wght@1,400;1,500&display=swap" rel="stylesheet">
+</head>
+<body class="bg-[#FDFBF8] text-[#333] min-h-screen">
+
+    <div id="app" class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-[#2c3e50] mb-2">Lotería de IA</h1>
+            <p class="text-lg text-[#7f8c8d]">Un juego para aprender sobre Inteligencia Artificial</p>
+        </header>
+
+        <main class="bg-white p-6 rounded-2xl shadow-lg">
+            <!-- Control and Called Card Section -->
+            <section class="flex flex-col md:flex-row gap-6 mb-8">
+                <!-- Controls -->
+                <div class="md:w-1/3 bg-gray-50 p-6 rounded-xl flex flex-col justify-center items-center text-center">
+                    <h2 class="text-2xl font-bold mb-4 text-[#2c3e50]">El Cantor Digital</h2>
+                    <div id="called-card-display" class="w-full h-48 bg-white rounded-lg flex flex-col justify-center items-center p-4 shadow-inner mb-4">
+                        <p id="no-card-message" class="text-gray-500">Presiona "Empezar" para sacar la primera carta.</p>
+                        <div id="card-content" class="hidden text-center">
+                            <h3 id="called-card-name" class="text-2xl font-bold text-[#3b82f6]"></h3>
+                            <p id="called-card-canto" class="text-md text-gray-600 mt-2 canto-text"></p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-4">
+                        <button id="start-button" class="btn-primary bg-[#27ae60] text-white font-bold py-2 px-6 rounded-full shadow-md hover:bg-[#2ecc71]">Empezar</button>
+                        <button id="reset-button" class="btn-primary bg-[#c0392b] text-white font-bold py-2 px-6 rounded-full shadow-md hover:bg-[#e74c3c]">Reiniciar</button>
+                    </div>
+                </div>
+
+                <!-- Card Grid -->
+                <div class="md:w-2/3">
+                    <div id="card-grid" class="grid grid-cols-6 sm:grid-cols-9 gap-2">
+                        <!-- Cards will be generated by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Filters -->
+            <section class="mb-8">
+                <h3 class="text-xl font-bold text-center mb-4 text-[#2c3e50]">Explorar por Categoría</h3>
+                <div id="filter-container" class="flex flex-wrap justify-center gap-2">
+                    <!-- Filter buttons will be generated by JS -->
+                </div>
+            </section>
+
+            <!-- Card Details Section -->
+            <section id="details-section" class="bg-gray-50 p-6 rounded-xl shadow-inner min-h-[200px]">
+                 <div id="details-placeholder" class="flex justify-center items-center h-full">
+                    <p class="text-gray-500 text-lg">Selecciona una carta del tablero para ver su explicación.</p>
+                </div>
+                <article id="details-content" class="hidden prose max-w-none">
+                    <h2 id="details-title" class="text-3xl font-bold text-[#3b82f6]"></h2>
+                    <p id="details-canto" class="text-lg text-gray-700 mb-4 canto-text"></p>
+                    <div id="details-analysis" class="text-base leading-relaxed"></div>
+                </article>
+            </section>
+        </main>
+
+        <footer class="text-center mt-8 text-gray-500 text-sm">
+            <p>Creado con la magia de la IA. Basado en el manual "Lotería de la Inteligencia Artificial".</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const aiConcepts = [
+                { id: 1, name: "Inteligencia Artificial", canto: "La que busca en la máquina un reflejo de la vida.", category: "Fundamentos", analysis: "La Inteligencia Artificial (IA) es el campo de la ciencia de la computación dedicado a la creación de máquinas y software que exhiben capacidades tradicionalmente asociadas con la inteligencia humana. Estas capacidades incluyen el aprendizaje, el razonamiento, la resolución de problemas, la percepción, la comprensión del lenguaje y la toma de decisiones. En su esencia, la IA permite que los ordenadores 'piensen' y 'aprendan' de manera análoga a los seres humanos, utilizando algoritmos y modelos matemáticos para procesar información y actuar en consecuencia." },
+                { id: 2, name: "Algoritmo", canto: "El que marca el paso a paso, sin descanso ni retraso.", category: "Fundamentos", analysis: "Un algoritmo es una serie de instrucciones o reglas finitas, bien definidas y ordenadas, diseñadas para realizar una tarea específica o resolver un problema. En el contexto de la IA, un algoritmo es la receta fundamental que guía a la computadora. Es el 'paso a paso' que detalla cómo procesar datos de entrada, realizar cálculos y operaciones, y producir un resultado de salida." },
+                { id: 3, name: "Big Data", canto: "El océano de datos donde el conocimiento nada.", category: "Fundamentos", analysis: "El término Big Data se refiere a conjuntos de datos digitales cuyo volumen, velocidad y variedad superan la capacidad de las herramientas de software tradicionales para ser capturados, gestionados y procesados en un tiempo razonable. Es el combustible indispensable para la IA moderna." },
+                { id: 4, name: "Ciencia de Datos", canto: "La que extrae la joya del fondo de la mina.", category: "Fundamentos", analysis: "La Ciencia de Datos es un campo interdisciplinario que utiliza métodos científicos, procesos, algoritmos y sistemas para extraer conocimiento e insights de datos en sus diversas formas. Es la disciplina que une la estadística, la informática y el conocimiento de un dominio específico para dar sentido a la complejidad del Big Data." },
+                { id: 5, name: "Minería de Datos", canto: "Buscando patrones y vetas, descubre lo que no aparentas.", category: "Fundamentos", analysis: "La Minería de Datos es el proceso de descubrir patrones, correlaciones y conocimiento útil en grandes conjuntos de datos utilizando técnicas estadísticas y de inteligencia artificial. Es una de las actividades centrales dentro de la Ciencia de Datos." },
+                { id: 6, name: "Aprendizaje Automático", canto: "El que aprende del pasado para un futuro bien trazado.", category: "Aprendizaje", analysis: "El Aprendizaje Automático (Machine Learning, ML) es un subconjunto de la IA que se centra en el desarrollo de algoritmos que permiten a las computadoras aprender directamente de los datos y la experiencia, sin ser programadas explícitamente para cada tarea." },
+                { id: 7, name: "Aprendizaje Supervisado", canto: "Con el maestro a su lado, aprende lo ya etiquetado.", category: "Aprendizaje", analysis: "El Aprendizaje Supervisado es el paradigma de ML más común. Se define por el uso de conjuntos de datos etiquetados para entrenar algoritmos. El modelo recibe datos de entrada junto con la salida correcta correspondiente." },
+                { id: 8, name: "Aprendizaje no Supervisado", canto: "Solo en la multitud, encuentra la similitud.", category: "Aprendizaje", analysis: "En el Aprendizaje no Supervisado, el modelo se entrena con datos que no han sido etiquetados ni clasificados. La tarea del algoritmo es explorar los datos por sí mismo y descubrir patrones o estructuras ocultas." },
+                { id: 9, name: "Aprendizaje por Refuerzo", canto: "A base de prueba y error, se hace diestro y sabedor.", category: "Aprendizaje", analysis: "En el Aprendizaje por Refuerzo, un agente de IA aprende a tomar decisiones interactuando con un entorno. Realiza acciones y recibe a cambio recompensas o penalizaciones, aprendiendo la estrategia que maximiza la recompensa total." },
+                { id: 10, name: "Aprendizaje Semisupervisado", canto: "Con poquita ayuda, resuelve la gran duda.", category: "Aprendizaje", analysis: "El Aprendizaje Semisupervisado es un punto intermedio que se utiliza cuando se dispone de una gran cantidad de datos sin etiquetar y solo una pequeña cantidad de datos etiquetados, usando los segundos para guiar el aprendizaje sobre los primeros." },
+                { id: 11, name: "Modelo Predictivo", canto: "El que adivina tu suerte, con los datos se hace fuerte.", category: "Aprendizaje", analysis: "Un Modelo Predictivo es el resultado que se genera cuando un algoritmo de aprendizaje automático se entrena con datos. Está diseñado para hacer predicciones sobre datos nuevos basándose en patrones históricos." },
+                { id: 12, name: "Simulación", canto: "El mundo de mentiritas, donde el robot se ejercita.", category: "Aprendizaje", analysis: "Una simulación es un entorno virtual utilizado como campo de entrenamiento seguro y eficiente, especialmente para algoritmos de aprendizaje por refuerzo. Permite a un agente de IA experimentar millones de escenarios rápidamente y sin consecuencias en el mundo real." },
+                { id: 13, name: "Red Neuronal", canto: "La telaraña de nudos que piensa por todos los modos.", category: "Redes Neuronales", analysis: "Una Red Neuronal Artificial (RNA) es un modelo computacional inspirado en el cerebro humano, compuesto por nodos de procesamiento interconectados (neuronas) organizados en capas. Es fundamental para el Deep Learning." },
+                { id: 14, name: "Deep Learning", canto: "Con sus capas profundas, los misterios circundas.", category: "Redes Neuronales", analysis: "El Aprendizaje Profundo (Deep Learning) es un subcampo del ML que utiliza redes neuronales con muchas capas ocultas ('profundas'), permitiendo aprender jerarquías de características muy complejas. Es la técnica detrás de los avances más impresionantes de la IA reciente." },
+                { id: 15, name: "Perceptrón", canto: "La neurona solitaria, la idea más primaria.", category: "Redes Neuronales", analysis: "El Perceptrón es el componente más básico de una red neuronal, una única neurona artificial. Toma varias entradas, les asigna un peso y produce una única salida binaria si se supera un umbral." },
+                { id: 16, name: "Backpropagation", canto: "Corrigiendo hacia atrás, el error no vuelve más.", category: "Redes Neuronales", analysis: "La Retropropagación (Backpropagation) es el algoritmo clave para entrenar redes neuronales. Funciona calculando el error en la salida y propagándolo hacia atrás a través de la red para ajustar los pesos de las conexiones y mejorar la precisión." },
+                { id: 17, name: "Función de Activación", canto: "El interruptor del seso, que da inicio al proceso.", category: "Redes Neuronales", analysis: "La Función de Activación es un componente matemático que introduce no linealidad en una red neuronal, permitiéndole aprender patrones complejos. Decide la 'fuerza' de la señal que una neurona envía a la siguiente capa." },
+                { id: 18, name: "Sobreajuste", canto: "El que memoriza tanto, que en lo nuevo causa espanto.", category: "Redes Neuronales", analysis: "El Sobreajuste (Overfitting) ocurre cuando un modelo aprende los datos de entrenamiento 'demasiado bien', incluyendo el ruido, y como resultado, no generaliza bien a datos nuevos. Falla al hacer predicciones sobre información que no ha visto antes." },
+                { id: 19, name: "Procesamiento del Lenguaje Natural", canto: "El que entiende lo que hablamos y traduce los arcanos.", category: "Lenguaje", analysis: "El Procesamiento del Lenguaje Natural (PLN) es una rama de la IA que se ocupa de la interacción entre las computadoras y el lenguaje humano. Su objetivo es permitir que las máquinas 'lean', entiendan, interpreten y generen lenguaje humano." },
+                { id: 20, name: "Modelo de Lenguaje Grande", canto: "El gigante de las letras, que con todas te penetra.", category: "Lenguaje", analysis: "Un Modelo de Lenguaje Grande (LLM) es un modelo de IA avanzado entrenado con cantidades masivas de texto. Aprende patrones, gramática y matices del lenguaje para generar texto coherente y contextualmente apropiado, como la serie GPT o Gemini." },
+                { id: 21, name: "Chatbot", canto: "El amigo que contesta, sin cansancio y siempre en fiesta.", category: "Lenguaje", analysis: "Un Chatbot es un programa de IA diseñado para simular una conversación humana. Los chatbots modernos, impulsados por LLMs, pueden mantener conversaciones abiertas sobre casi cualquier tema." },
+                { id: 22, name: "Análisis de Sentimientos", canto: "El que mide la alegría o la triste melancolía.", category: "Lenguaje", analysis: "El Análisis de Sentimientos es una técnica de PLN para identificar y cuantificar el tono emocional (positivo, negativo, neutro) en un texto. Es muy usado para analizar opiniones de clientes en redes sociales o reseñas de productos." },
+                { id: 23, name: "Tokenización", canto: "La palabra en pedacitos, para entender sus escritos.", category: "Lenguaje", analysis: "La Tokenización es el proceso de dividir un texto en unidades más pequeñas llamadas 'tokens' (palabras, números, puntuación). Es un primer paso fundamental para que las máquinas puedan procesar el lenguaje." },
+                { id: 24, name: "Generación de Lenguaje Natural", canto: "El que escribe los reportes, con sus datos por soportes.", category: "Lenguaje", analysis: "La Generación de Lenguaje Natural (NLG) es el subcampo del PLN que se enfoca en producir texto similar al humano a partir de datos estructurados. Es la tecnología que permite a la IA 'escribir' o 'hablar'." },
+                { id: 25, name: "RAG (Generación Aumentada)", canto: "El que busca en la fuente externa, para que su saber no inverna.", category: "Lenguaje", analysis: "La Generación Aumentada por Recuperación (RAG) es una técnica que mejora los LLMs combinándolos con un sistema de recuperación de información en tiempo real. Permite al modelo acceder a conocimiento externo y actualizado para dar respuestas más precisas y fiables." },
+                { id: 26, name: "Visión por Computadora", canto: "Los ojos de la corriente, que ven lo que el humano siente.", category: "Visión y Robótica", analysis: "La Visión por Computadora es un campo de la IA que entrena a las computadoras para interpretar y comprender el mundo visual. Permite a las máquinas identificar objetos, personas, texto y reaccionar a lo que 'ven'." },
+                { id: 27, name: "Detección de Objetos", canto: "Te dice qué es y dónde está, con un cuadro lo pondrá.", category: "Visión y Robótica", analysis: "La Detección de Objetos es una tarea de visión por computadora que identifica y localiza objetos dentro de una imagen, generalmente dibujando un cuadro delimitador a su alrededor. Es clave para los vehículos autónomos." },
+                { id: 28, name: "Reconocimiento Facial", canto: "El que conoce tu cara, y de nadie la separa.", category: "Visión y Robótica", analysis: "El Reconocimiento Facial es una aplicación que identifica o verifica la identidad de una persona a partir de una imagen. Analiza características geométricas del rostro para crear una 'huella facial' única." },
+                { id: 29, name: "Reconocimiento Óptico de Caracteres", canto: "El que lee la foto impresa, y en texto te la regresa.", category: "Visión y Robótica", analysis: "El Reconocimiento Óptico de Caracteres (OCR) convierte documentos escaneados, PDFs o imágenes en texto editable y con capacidad de búsqueda. Permite a una computadora 'leer' texto impreso." },
+                { id: 30, name: "Segmentación de Imágenes", canto: "Delineando el contorno, píxel a píxel, sin soborno.", category: "Visión y Robótica", analysis: "La Segmentación de Imágenes divide una imagen en múltiples segmentos a nivel de píxel, asignando cada píxel a una clase de objeto. Proporciona un entendimiento mucho más detallado de la escena que la detección de objetos." },
+                { id: 31, name: "Robótica", canto: "El cuerpo de metal y cable, que hace el trabajo incansable.", category: "Visión y Robótica", analysis: "La Robótica es la rama de la ingeniería que se ocupa del diseño, construcción y uso de robots. La IA proporciona el 'cerebro' que permite a los robots modernos percibir, decidir y adaptarse a su entorno." },
+                { id: 32, name: "Vehículos Autónomos", canto: "El carro que va solito, siguiendo su propio rito.", category: "Visión y Robótica", analysis: "Los Vehículos Autónomos utilizan una combinación de sensores (cámaras, LiDAR) y algoritmos de IA para percibir su entorno y navegar de forma segura sin intervención humana. Son una de las aplicaciones más complejas de la IA." },
+                { id: 33, name: "Internet de las Cosas", canto: "La red de objetos parlantes, siempre activos y vigilantes.", category: "Visión y Robótica", analysis: "El Internet de las Cosas (IoT) es la red de dispositivos físicos conectados a internet que recopilan y comparten datos. El IoT proporciona los datos del mundo real, y la IA los analiza para tomar decisiones inteligentes." },
+                { id: 34, name: "Efector Final", canto: "La mano del autómata, que sujeta, suelda o ata.", category: "Visión y Robótica", analysis: "En robótica, el Efector Final es la herramienta en el extremo del brazo de un robot (pinzas, pistolas de soldar, etc.). Es el componente que interactúa directamente con el entorno para realizar una tarea." },
+                { id: 35, name: "Automatización", canto: "La tarea que antes hacías, ahora la mandan las frías.", category: "Visión y Robótica", analysis: "La Automatización es el uso de la tecnología para realizar tareas que antes requerían intervención humana. La IA permite la 'automatización inteligente', abordando tareas complejas que requieren juicio y adaptación." },
+                { id: 36, name: "Transformer", canto: "El arquitecto del verbo, que hizo al lenguaje su siervo.", category: "Herramientas", analysis: "La arquitectura Transformer es un tipo de red neuronal que revolucionó el PLN. Su 'mecanismo de atención' le permite procesar todas las palabras de una oración simultáneamente, capturando el contexto complejo de manera muy eficaz. Es la base de los LLMs como GPT." },
+                { id: 37, name: "API", canto: "La puerta siempre entreabierta, para la función correcta.", category: "Herramientas", analysis: "Una API (Interfaz de Programación de Aplicaciones) permite que diferentes programas de software se comuniquen entre sí. En IA, las APIs permiten a los desarrolladores integrar modelos potentes (como GPT-4) en sus propias aplicaciones fácilmente." },
+                { id: 38, name: "TensorFlow", canto: "El motor de Google, potente, para entrenar a la mente.", category: "Herramientas", analysis: "TensorFlow es una biblioteca de software de código abierto de Google para el aprendizaje automático. Es una de las plataformas más potentes para construir y entrenar modelos de Deep Learning a gran escala." },
+                { id: 39, name: "Keras", canto: "La capa que lo hace fácil, para un modelo más grácil.", category: "Herramientas", analysis: "Keras es una API de alto nivel para redes neuronales que se ejecuta sobre frameworks como TensorFlow. Su filosofía es la facilidad de uso y la creación rápida de prototipos, haciendo el Deep Learning más accesible." },
+                { id: 40, name: "Red Generativa Antagónica", canto: "El pintor y el policía, creando con maestría.", category: "Herramientas", analysis: "Una Red Generativa Antagónica (GAN) consta de dos redes neuronales que compiten: un Generador que crea datos falsos y un Discriminador que intenta detectarlos. Este juego adversarial resulta en la creación de datos sintéticos muy realistas." },
+                { id: 41, name: "Aumento de Datos", canto: "Si los datos no te alcanzan, con este truco se amansan.", category: "Herramientas", analysis: "El Aumento de Datos es una técnica para incrementar artificialmente el tamaño de un conjunto de datos de entrenamiento. Se aplican transformaciones aleatorias (rotación, recorte, etc.) a los datos existentes para crear nuevas muestras y mejorar la robustez del modelo." },
+                { id: 42, name: "Prueba de Turing", canto: "El juego del escondite, a ver si la máquina emite.", category: "Conceptos Avanzados", analysis: "La Prueba de Turing es un test para evaluar la capacidad de una máquina de exhibir un comportamiento inteligente indistinguible del de un ser humano en una conversación. Mide la simulación de la inteligencia, no la conciencia." },
+                { id: 43, name: "Alucinación", canto: "El que inventa con certeza, aunque no tenga cabeza.", category: "Conceptos Avanzados", analysis: "Una 'alucinación' en IA es una respuesta generada por un modelo que es incorrecta o inventada, pero presentada con confianza. Ocurre porque los LLMs son modelos probabilísticos y a veces la secuencia de palabras más probable no se corresponde con la realidad." },
+                { id: 44, name: "Caja Negra", canto: "El sistema que decide, pero su razón la elide.", category: "Conceptos Avanzados", analysis: "Una 'Caja Negra' describe un sistema de IA cuyo proceso de toma de decisiones es opaco e inescrutable para los humanos. Podemos ver la entrada y la salida, pero no entender fácilmente el 'cómo' o el 'porqué' de la decisión." },
+                { id: 45, name: "Singularidad Tecnológica", canto: "El día en que la creación, supere a la razón.", category: "Conceptos Avanzados", analysis: "La Singularidad Tecnológica es un punto hipotético en el futuro en el que el crecimiento tecnológico, impulsado por una IA capaz de auto-mejorarse, se vuelve incontrolable y da lugar a cambios imprevisibles en la civilización humana." },
+                { id: 46, name: "Inteligencia Artificial General", canto: "La que todo lo sabría, como un humano lo haría.", category: "Conceptos Avanzados", analysis: "La Inteligencia Artificial General (IAG) se refiere a una IA hipotética que posee la capacidad de entender, aprender y aplicar su conocimiento en una amplia gama de tareas al nivel de un ser humano, a diferencia de la 'IA Estrecha' actual, que es especializada." },
+                { id: 47, name: "Interfaz Cerebro-Computadora", canto: "El puente entre pensamiento y el digital firmamento.", category: "Conceptos Avanzados", analysis: "Una Interfaz Cerebro-Computadora (BCI) es una tecnología que establece un canal de comunicación directo entre el cerebro y un dispositivo externo, permitiendo controlar tecnología con el pensamiento. Tiene aplicaciones revolucionarias en medicina." },
+                { id: 48, name: "Ética de la IA", canto: "La conciencia del programa, que lo justo proclama.", category: "Ética", analysis: "La Ética de la IA es el campo que se ocupa de los principios morales y los problemas éticos del diseño, desarrollo y uso de la IA. Busca garantizar que la tecnología sea justa, transparente, responsable y respetuosa con los derechos humanos." },
+                { id: 49, name: "Sesgo", canto: "El prejuicio en el dato, que da un resultado ingrato.", category: "Ética", analysis: "El sesgo algorítmico se refiere a la tendencia de un sistema de IA a producir resultados sistemáticamente perjudiciales contra ciertos grupos. Surge cuando los datos de entrenamiento reflejan prejuicios sociales existentes, que el modelo aprende y a menudo amplifica." },
+                { id: 50, name: "Transparencia", canto: "El que muestra sus entrañas, para evitar las patrañas.", category: "Ética", analysis: "La Transparencia es un principio ético que exige que el funcionamiento de un sistema de IA, sus datos y su proceso de decisión sean abiertos y comprensibles. Es un requisito previo para la confianza y la rendición de cuentas." },
+                { id: 51, name: "IA Explicable", canto: "La que cuenta su porqué, para que le tengas fe.", category: "Ética", analysis: "La IA Explicable (XAI) es un conjunto de técnicas destinadas a desarrollar sistemas de IA cuyas decisiones puedan ser entendidas por los humanos. Es la respuesta técnica al problema de la 'caja negra', crucial para la confianza en ámbitos de alto riesgo." },
+                { id: 52, name: "Privacidad", canto: "El tesoro personal, que no debe tocar el mal.", category: "Ética", analysis: "La Privacidad es un derecho fundamental y un principio ético central en la IA. Se refiere a la protección de los datos personales y la capacidad de los individuos para controlar su información, un desafío clave dado que la IA es 'hambrienta de datos'." },
+                { id: 53, name: "Responsabilidad", canto: "Si la máquina se equivoca, ¿a qué humano le toca?", category: "Ética", analysis: "La Responsabilidad (Accountability) es el principio ético que busca establecer líneas claras de atribución de responsabilidad por los resultados de la IA. Plantea la difícil pregunta de quién es responsable cuando un sistema autónomo comete un error." },
+                { id: 54, name: "Gobernanza de Datos", canto: "Las reglas del gran tesoro, para usarlo con decoro.", category: "Ética", analysis: "La Gobernanza de Datos es el proceso de gestión de la disponibilidad, usabilidad, integridad y seguridad de los datos. En IA, es el marco que garantiza que los datos se gestionen de manera ética y responsable, siendo la base para mitigar riesgos como el sesgo." },
+            ];
+
+            let state = {
+                gameRunning: false,
+                availableCards: [],
+                calledCards: [],
+                currentCard: null,
+                activeFilter: 'Todos'
+            };
+
+            const cardGrid = document.getElementById('card-grid');
+            const startButton = document.getElementById('start-button');
+            const resetButton = document.getElementById('reset-button');
+            const noCardMessage = document.getElementById('no-card-message');
+            const cardContent = document.getElementById('card-content');
+            const calledCardName = document.getElementById('called-card-name');
+            const calledCardCanto = document.getElementById('called-card-canto');
+            const detailsPlaceholder = document.getElementById('details-placeholder');
+            const detailsContent = document.getElementById('details-content');
+            const detailsTitle = document.getElementById('details-title');
+            const detailsCanto = document.getElementById('details-canto');
+            const detailsAnalysis = document.getElementById('details-analysis');
+            const filterContainer = document.getElementById('filter-container');
+
+            function init() {
+                renderGrid();
+                setupFilters();
+                resetGame();
+            }
+
+            function renderGrid() {
+                cardGrid.innerHTML = '';
+                aiConcepts.forEach(concept => {
+                    const cardEl = document.createElement('button');
+                    cardEl.className = 'card-grid-item border-2 border-transparent bg-white rounded-lg p-1 aspect-w-1 aspect-h-1 flex flex-col justify-center items-center text-center cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400';
+                    cardEl.dataset.id = concept.id;
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 40;
+                    canvas.height = 40;
+                    cardEl.appendChild(canvas);
+                    generateIcon(canvas, concept.name);
+
+                    const nameEl = document.createElement('span');
+                    nameEl.className = 'text-xs mt-1 font-semibold text-gray-700';
+                    nameEl.textContent = concept.name;
+                    cardEl.appendChild(nameEl);
+
+                    cardEl.addEventListener('click', () => showDetails(concept.id));
+                    cardGrid.appendChild(cardEl);
+                });
+            }
+            
+            function generateIcon(canvas, text) {
+                const ctx = canvas.getContext('2d');
+                const width = canvas.width;
+                const height = canvas.height;
+                
+                let hash = 0;
+                for (let i = 0; i < text.length; i++) {
+                    hash = text.charCodeAt(i) + ((hash << 5) - hash);
+                }
+
+                const h = hash % 360;
+                const s = 70 + (hash % 20);
+                const l = 60 + (hash % 20);
+                
+                ctx.fillStyle = `hsl(${h}, ${s}%, ${l}%)`;
+                ctx.fillRect(0, 0, width, height);
+                
+                ctx.fillStyle = `hsl(${h}, ${s}%, 95%)`;
+                
+                const shapeType = hash % 4;
+                const shapes = Math.abs(hash % 3) + 2;
+
+                for (let i = 0; i < shapes; i++) {
+                    const x = (Math.abs(hash * (i + 1) * 13)) % (width * 0.6) + (width * 0.2);
+                    const y = (Math.abs(hash * (i + 1) * 17)) % (height * 0.6) + (height * 0.2);
+                    const size = (Math.abs(hash * (i + 1) * 19)) % 8 + 5;
+                    
+                    ctx.beginPath();
+                    if (shapeType === 0) { // circles
+                        ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
+                    } else if (shapeType === 1) { // squares
+                        ctx.rect(x - size / 2, y - size / 2, size, size);
+                    } else if (shapeType === 2) { // triangles
+                        ctx.moveTo(x, y - size / 2);
+                        ctx.lineTo(x + size / 2, y + size / 2);
+                        ctx.lineTo(x - size / 2, y + size / 2);
+                        ctx.closePath();
+                    } else { // lines
+                        ctx.moveTo(x-size, y-size);
+                        ctx.lineTo(x+size, y+size);
+                        ctx.strokeStyle = `hsl(${h}, ${s}%, 95%)`;
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        continue;
+                    }
+                    ctx.fill();
+                }
+            }
+
+            function setupFilters() {
+                const categories = ['Todos', ...new Set(aiConcepts.map(c => c.category))];
+                filterContainer.innerHTML = '';
+                categories.forEach(category => {
+                    const button = document.createElement('button');
+                    button.textContent = category;
+                    button.className = 'px-4 py-2 text-sm font-medium rounded-full transition-colors';
+                    button.dataset.filter = category;
+                    if (category === state.activeFilter) {
+                         button.classList.add('bg-blue-500', 'text-white');
+                    } else {
+                         button.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+                    }
+                    button.addEventListener('click', () => applyFilter(category));
+                    filterContainer.appendChild(button);
+                });
+            }
+
+            function applyFilter(category) {
+                state.activeFilter = category;
+                updateGridHighlights();
+                setupFilters();
+            }
+
+            function updateGridHighlights() {
+                const allCards = document.querySelectorAll('.card-grid-item');
+                allCards.forEach(cardEl => {
+                    cardEl.classList.remove('highlight');
+                    if (state.activeFilter !== 'Todos') {
+                        const concept = aiConcepts.find(c => c.id == cardEl.dataset.id);
+                        if (concept && concept.category === state.activeFilter) {
+                            cardEl.classList.add('highlight');
+                        }
+                    }
+                });
+            }
+
+            function startGame() {
+                state.gameRunning = true;
+                state.availableCards = [...aiConcepts.map(c => c.id)];
+                state.calledCards = [];
+                startButton.textContent = 'Siguiente Carta';
+                drawCard();
+            }
+
+            function resetGame() {
+                state.gameRunning = false;
+                state.availableCards = [];
+                state.calledCards = [];
+                state.currentCard = null;
+                
+                startButton.textContent = 'Empezar';
+                noCardMessage.classList.remove('hidden');
+                cardContent.classList.add('hidden');
+                
+                detailsPlaceholder.classList.remove('hidden');
+                detailsContent.classList.add('hidden');
+
+                const allCards = document.querySelectorAll('.card-grid-item');
+                allCards.forEach(card => card.classList.remove('called', 'active'));
+                
+                applyFilter('Todos');
+            }
+
+            function drawCard() {
+                if (!state.gameRunning) {
+                    startGame();
+                    return;
+                }
+
+                if (state.availableCards.length === 0) {
+                    alert('¡Lotería! Se han cantado todas las cartas.');
+                    resetGame();
+                    return;
+                }
+
+                const randomIndex = Math.floor(Math.random() * state.availableCards.length);
+                const cardId = state.availableCards.splice(randomIndex, 1)[0];
+                
+                state.calledCards.push(cardId);
+                const concept = aiConcepts.find(c => c.id === cardId);
+                state.currentCard = concept;
+
+                updateCalledCardDisplay(concept);
+                showDetails(concept.id);
+                updateCardInGrid(concept.id, true);
+            }
+
+            function updateCalledCardDisplay(concept) {
+                noCardMessage.classList.add('hidden');
+                cardContent.classList.remove('hidden');
+                calledCardName.textContent = concept.name;
+                calledCardCanto.textContent = `"${concept.canto}"`;
+            }
+
+            function showDetails(conceptId) {
+                const concept = aiConcepts.find(c => c.id === conceptId);
+                if (!concept) return;
+
+                detailsPlaceholder.classList.add('hidden');
+                detailsContent.classList.remove('hidden');
+
+                detailsTitle.textContent = `${concept.id}. ${concept.name}`;
+                detailsCanto.textContent = `"${concept.canto}"`;
+                detailsAnalysis.innerHTML = `<p>${concept.analysis.replace(/\n/g, '</p><p>')}</p>`;
+
+                updateCardInGrid(concept.id);
+            }
+
+            function updateCardInGrid(conceptId, isNewlyCalled = false) {
+                const allCards = document.querySelectorAll('.card-grid-item');
+                allCards.forEach(card => {
+                    card.classList.remove('active');
+                    if (card.dataset.id == conceptId) {
+                        card.classList.add('active');
+                        if (isNewlyCalled) {
+                            card.classList.add('called');
+                        }
+                    }
+                });
+            }
+
+            startButton.addEventListener('click', drawCard);
+            resetButton.addEventListener('click', resetGame);
+
+            init();
+        });
+    </script>
+</body>
+</html>
