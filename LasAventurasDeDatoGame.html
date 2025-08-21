@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Las Aventuras de Dato: Una Aventura Interactiva</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Cosmic Harmony -->
+    <!-- Application Structure Plan: La aplicación está diseñada como un mapa interactivo del "Cosmos Computacional". En lugar de seguir la novela linealmente, los usuarios pueden explorar los conceptos clave (Red Neuronal, Océano de Datos, Sesgo) como ubicaciones en un mapa. Al hacer clic en una ubicación, la página se desplaza suavemente a una sección dedicada que explica el concepto con texto, visualizaciones y elementos interactivos. Esta estructura basada en la exploración es más atractiva y fácil de usar para un público joven, transformando la narrativa en un patio de recreo digital y reforzando la geografía del mundo de la IA. -->
+    <!-- Visualization & Content Choices: 
+    - Mapa del Cosmos: (Organizar) Diagrama HTML/CSS para la navegación principal. Interacción: Clic para desplazarse. Justificación: Proporciona un ancla visual y una estructura no lineal.
+    - Personajes: (Informar) Tarjetas HTML/CSS. Interacción: Hover. Justificación: Presenta a los actores clave y sus roles conceptuales de forma rápida.
+    - Océano del Conocimiento: (Organizar/Relaciones) Simulación en Canvas. Interacción: Botón para activar el 'clustering'. Justificación: Demuestra visualmente el aprendizaje no supervisado de una manera mucho más efectiva que el texto estático.
+    - La Sombra del Sesgo: (Comparar) Gráfico de barras de Chart.js. Interacción: Botones para alternar entre datasets. Justificación: Muestra de forma impactante cómo el sesgo de muestreo distorsiona la realidad.
+    - El Núcleo y la Respuesta: (Informar) Bloques de texto y canvas dinámicos. Interacción: Botón para 'generar' la respuesta. Justificación: Simula la síntesis multimodal final, combinando texto e imagen.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8;
+            color: #4A4A4A;
+        }
+        .celestial-bg {
+            background-color: #FDFBF8;
+            background-image: radial-gradient(#EAE6E1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(234, 230, 225, 0.8);
+        }
+        .map-node {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .map-node:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(216, 199, 175, 0.4);
+        }
+        .map-node.active {
+            box-shadow: 0 0 0 3px #FF8C42;
+            transform: scale(1.05);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body class="celestial-bg">
+
+    <header class="text-center py-12 px-4">
+        <h1 class="text-4xl md:text-6xl font-bold text-[#3D3D3D]">Las Aventuras de Dato</h1>
+        <p class="mt-4 text-lg md:text-xl text-[#6B6B6B] max-w-3xl mx-auto">Una novela de IA convertida en una aventura interactiva. Explora el Cosmos Computacional y descubre los secretos del aprendizaje automático.</p>
+    </header>
+
+    <main class="container mx-auto px-4 pb-20">
+
+        <!-- Mapa de Navegación -->
+        <section id="mapa-nav" class="mb-16 p-8 rounded-2xl glass-card">
+            <h2 class="text-2xl font-bold text-center mb-6 text-[#3D3D3D]">Mapa del Cosmos Computacional</h2>
+            <p class="text-center text-gray-600 mb-8">Haz clic en una ubicación para viajar a esa parte de la historia y aprender sobre su concepto fundamental.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                <a href="#viaje" data-target="inicio" class="map-node block p-6 bg-white rounded-xl shadow-md cursor-pointer border-2 border-transparent">
+                    <span class="text-4xl">🚀</span>
+                    <h3 class="font-semibold mt-2 text-lg">El Nacimiento de una Pregunta</h3>
+                    <p class="text-sm text-gray-500">Donde todo comienza.</p>
+                </a>
+                <a href="#viaje" data-target="oceano" class="map-node block p-6 bg-white rounded-xl shadow-md cursor-pointer border-2 border-transparent">
+                    <span class="text-4xl">🌊</span>
+                    <h3 class="font-semibold mt-2 text-lg">El Océano del Conocimiento</h3>
+                    <p class="text-sm text-gray-500">Aprendizaje no supervisado.</p>
+                </a>
+                <a href="#viaje" data-target="sesgo" class="map-node block p-6 bg-white rounded-xl shadow-md cursor-pointer border-2 border-transparent">
+                    <span class="text-4xl">🎭</span>
+                    <h3 class="font-semibold mt-2 text-lg">La Sombra del Sesgo</h3>
+                    <p class="text-sm text-gray-500">El peligro de los datos incompletos.</p>
+                </a>
+                <a href="#viaje" data-target="ascenso" class="map-node block p-6 bg-white rounded-xl shadow-md cursor-pointer border-2 border-transparent">
+                     <span class="text-4xl">🏙️</span>
+                    <h3 class="font-semibold mt-2 text-lg">El Ascenso por las Capas</h3>
+                    <p class="text-sm text-gray-500">Aprendizaje profundo y corrección.</p>
+                </a>
+                 <a href="#viaje" data-target="atencion" class="map-node block p-6 bg-white rounded-xl shadow-md cursor-pointer border-2 border-transparent">
+                     <span class="text-4xl">✨</span>
+                    <h3 class="font-semibold mt-2 text-lg">El Don de la Atención</h3>
+                    <p class="text-sm text-gray-500">Conectando ideas lejanas.</p>
+                </a>
+                <a href="#viaje" data-target="nucleo" class="map-node block p-6 bg-white rounded-xl shadow-md cursor-pointer border-2 border-transparent">
+                    <span class="text-4xl">💡</span>
+                    <h3 class="font-semibold mt-2 text-lg">El Núcleo y la Respuesta</h3>
+                    <p class="text-sm text-gray-500">La generación de conocimiento.</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Sección de Personajes -->
+        <section id="personajes" class="mb-16 p-8 rounded-2xl glass-card">
+            <h2 class="text-2xl font-bold text-center mb-8 text-[#3D3D3D]">Habitantes del Cosmos</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white p-4 rounded-lg shadow-sm text-center">
+                    <h3 class="font-semibold">Dato ⚡</h3><p class="text-sm text-gray-600">Un paquete de información. Representa la pregunta o 'prompt' inicial.</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm text-center">
+                    <h3 class="font-semibold">Pixel 🎨</h3><p class="text-sm text-gray-600">Datos de imagen. Piensa en patrones, colores y formas (CNN).</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm text-center">
+                    <h3 class="font-semibold">Sonus 🎵</h3><p class="text-sm text-gray-600">Datos de audio. Percibe el mundo como secuencias y ritmos (RNN).</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow-sm text-center">
+                    <h3 class="font-semibold">Sesgo 🤫</h3><p class="text-sm text-gray-600">La sombra del prejuicio. Representa el sesgo en los datos de entrenamiento.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contenido del Viaje -->
+        <section id="viaje">
+            <div id="inicio" class="content-section mb-12 p-8 rounded-2xl bg-white shadow-lg">
+                <h2 class="text-3xl font-bold mb-4 text-[#FF8C42]">🚀 El Nacimiento de una Pregunta</h2>
+                <p class="text-gray-700 leading-relaxed">Toda gran aventura en el Cosmos Computacional comienza con una chispa: una pregunta de un usuario. Nuestro héroe, Dato, nació del simple 'prompt': "¿Por qué el cielo es azul?". Su misión es viajar a través de los vastos sistemas de la supercomputadora para encontrar no solo una respuesta, sino un entendimiento completo. Este es el punto de partida, la capa de entrada donde el lenguaje humano se traduce al lenguaje de las máquinas.</p>
+            </div>
+
+            <div id="oceano" class="content-section mb-12 p-8 rounded-2xl bg-white shadow-lg">
+                <h2 class="text-3xl font-bold mb-4 text-[#FF8C42]">🌊 El Océano del Conocimiento</h2>
+                <p class="text-gray-700 leading-relaxed mb-6">Para aprender, Dato debe sumergirse en el Océano del Conocimiento, un gigantesco dataset de entrenamiento lleno de información caótica y sin etiquetar. Aquí, debe encontrar patrones por sí mismo, agrupando datos similares sin que nadie le diga qué buscar. Este proceso se llama <strong>aprendizaje no supervisado</strong> o <strong>clustering</strong>. Haz clic en el botón para ayudar a Dato a encontrar grupos de información similar en el océano.</p>
+                <div class="bg-gray-100 p-4 rounded-lg">
+                    <canvas id="oceanCanvas" class="w-full h-64 rounded"></canvas>
+                    <div class="text-center mt-4">
+                        <button id="clusterButton" class="bg-[#FF8C42] text-white font-bold py-2 px-4 rounded-lg hover:bg-[#E07B3A] transition-colors">Encontrar Patrones</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sesgo" class="content-section mb-12 p-8 rounded-2xl bg-white shadow-lg">
+                <h2 class="text-3xl font-bold mb-4 text-[#FF8C42]">🎭 La Sombra del Sesgo</h2>
+                <p class="text-gray-700 leading-relaxed mb-6">El Océano esconde peligros. La sombra llamada Sesgo puede engañar a Dato mostrándole solo una pequeña parte de la realidad. Si Dato aprende de un conjunto de datos incompleto (por ejemplo, viendo solo cielos grises), su respuesta será incorrecta. Esto es el <strong>sesgo de muestreo</strong>. Compara un dataset completo con uno sesgado para ver la diferencia.</p>
+                <div class="bg-gray-100 p-4 rounded-lg">
+                    <div class="chart-container">
+                        <canvas id="biasChart"></canvas>
+                    </div>
+                    <div class="text-center mt-4 space-x-4">
+                        <button id="fullDataButton" class="bg-[#4CAF50] text-white font-bold py-2 px-4 rounded-lg hover:bg-[#45A049] transition-colors">Dataset Completo</button>
+                        <button id="biasedDataButton" class="bg-[#F44336] text-white font-bold py-2 px-4 rounded-lg hover:bg-[#D32F2F] transition-colors">Dataset Sesgado</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="ascenso" class="content-section mb-12 p-8 rounded-2xl bg-white shadow-lg">
+                <h2 class="text-3xl font-bold mb-4 text-[#FF8C42]">🏙️ El Ascenso por las Capas</h2>
+                <p class="text-gray-700 leading-relaxed mb-6">Una vez que Dato tiene datos de calidad, debe ascender por la Ciudad de la Red Neuronal. En cada capa, los "Parámetros" refinan su conocimiento, construyendo ideas complejas a partir de bloques simples. Este es el corazón del <strong>aprendizaje profundo</strong>. Si comete un error, un "Eco de Corrección" (backpropagation) viaja hacia atrás para ajustar a los Parámetros. Es un ciclo constante de predicción y ajuste.</p>
+                 <div class="relative p-4 border-2 border-dashed border-gray-300 rounded-lg h-80 flex flex-col justify-around items-center">
+                    <div class="text-center font-semibold text-gray-500">Capa de Salida (Respuesta)</div>
+                    <div class="w-4 h-4 bg-gray-400 rounded-full"></div>
+                    <div class="text-center">Capa Oculta 2 (Conceptos)</div>
+                    <div class="w-4 h-4 bg-gray-400 rounded-full"></div>
+                    <div class="text-center">Capa Oculta 1 (Formas)</div>
+                    <div class="w-4 h-4 bg-gray-400 rounded-full"></div>
+                    <div class="text-center font-semibold text-gray-500">Capa de Entrada (Datos)</div>
+                </div>
+            </div>
+            
+            <div id="atencion" class="content-section mb-12 p-8 rounded-2xl bg-white shadow-lg">
+                <h2 class="text-3xl font-bold mb-4 text-[#FF8C42]">✨ El Don de la Atención</h2>
+                <p class="text-gray-700 leading-relaxed">Para responder "¿Por qué el cielo es azul?", Dato no puede pensar de forma secuencial. Necesita conectar ideas lejanas como "luz del Sol", "atmósfera" y "color" al mismo tiempo. El <strong>mecanismo de atención</strong> le permite hacer precisamente eso. Emite una "consulta" y todo el Océano del Conocimiento responde. Dato puede entonces "prestar atención" a las piezas de información más relevantes, sin importar dónde estén, para construir un contexto rico y completo al instante.</p>
+            </div>
+
+            <div id="nucleo" class="content-section p-8 rounded-2xl bg-white shadow-lg">
+                <h2 class="text-3xl font-bold mb-4 text-[#FF8C42]">💡 El Núcleo y la Respuesta</h2>
+                <p class="text-gray-700 leading-relaxed mb-6">Al final de su viaje, Dato no recibe una respuesta, sino que se convierte en ella. En el Núcleo, utiliza todo lo que ha aprendido para <strong>generar</strong> una respuesta multimodal. Combina su entendimiento del lenguaje con la habilidad de Pixel para crear imágenes y la de Sonus para crear sonidos. Haz clic para ver la síntesis final.</p>
+                <div class="bg-gray-100 p-6 rounded-lg">
+                    <div class="text-center mb-4">
+                        <button id="generateButton" class="bg-[#008CBA] text-white font-bold py-2 px-6 rounded-lg hover:bg-[#007B9A] transition-colors">Generar Respuesta</button>
+                    </div>
+                    <div id="responseText" class="text-gray-800 bg-white p-4 rounded-md min-h-[100px] transition-opacity duration-500 opacity-0"></div>
+                    <canvas id="responseCanvas" class="w-full h-32 mt-4 rounded-md transition-opacity duration-500 opacity-0"></canvas>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            const contentData = {
+                inicio: { title: "🚀 El Nacimiento de una Pregunta", text: "Toda gran aventura..." },
+                oceano: { title: "🌊 El Océano del Conocimiento", text: "Para aprender, Dato debe sumergirse..." },
+                sesgo: { title: "🎭 La Sombra del Sesgo", text: "El Océano esconde peligros..." },
+                ascenso: { title: "🏙️ El Ascenso por las Capas", text: "Una vez que Dato tiene datos de calidad..." },
+                atencion: { title: "✨ El Don de la Atención", text: "Para responder, Dato no puede pensar de forma secuencial..." },
+                nucleo: { title: "💡 El Núcleo y la Respuesta", text: "Al final de su viaje, Dato se convierte en la respuesta..." }
+            };
+
+            const mapNodes = document.querySelectorAll('.map-node');
+            mapNodes.forEach(node => {
+                node.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = node.getAttribute('data-target');
+                    const targetElement = document.getElementById(targetId);
+                    
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        mapNodes.forEach(n => n.classList.remove('active'));
+                        node.classList.add('active');
+                    }
+                });
+            });
+
+            const oceanCanvas = document.getElementById('oceanCanvas');
+            const oceanCtx = oceanCanvas.getContext('2d');
+            let particles = [];
+            const colors = ['#FF8C42', '#008CBA', '#4CAF50'];
+            const numParticles = 150;
+
+            function resizeCanvas(canvas) {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+            }
+
+            function initOcean() {
+                resizeCanvas(oceanCanvas);
+                particles = [];
+                for (let i = 0; i < numParticles; i++) {
+                    particles.push({
+                        x: Math.random() * oceanCanvas.width,
+                        y: Math.random() * oceanCanvas.height,
+                        vx: (Math.random() - 0.5) * 0.5,
+                        vy: (Math.random() - 0.5) * 0.5,
+                        targetX: null,
+                        targetY: null,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        radius: 3
+                    });
+                }
+            }
+
+            function drawOcean() {
+                oceanCtx.clearRect(0, 0, oceanCanvas.width, oceanCanvas.height);
+                particles.forEach(p => {
+                    oceanCtx.beginPath();
+                    oceanCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    oceanCtx.fillStyle = p.color;
+                    oceanCtx.fill();
+                });
+            }
+
+            function animateOcean() {
+                particles.forEach(p => {
+                    if (p.targetX !== null) {
+                        p.x += (p.targetX - p.x) * 0.05;
+                        p.y += (p.targetY - p.y) * 0.05;
+                    } else {
+                        p.x += p.vx;
+                        p.y += p.vy;
+
+                        if (p.x < 0 || p.x > oceanCanvas.width) p.vx *= -1;
+                        if (p.y < 0 || p.y > oceanCanvas.height) p.vy *= -1;
+                    }
+                });
+                drawOcean();
+                requestAnimationFrame(animateOcean);
+            }
+
+            document.getElementById('clusterButton').addEventListener('click', () => {
+                const centroids = {
+                    [colors[0]]: { x: oceanCanvas.width * 0.2, y: oceanCanvas.height * 0.5 },
+                    [colors[1]]: { x: oceanCanvas.width * 0.5, y: oceanCanvas.height * 0.2 },
+                    [colors[2]]: { x: oceanCanvas.width * 0.8, y: oceanCanvas.height * 0.7 }
+                };
+                particles.forEach(p => {
+                    p.targetX = centroids[p.color].x + (Math.random() - 0.5) * 100;
+                    p.targetY = centroids[p.color].y + (Math.random() - 0.5) * 100;
+                });
+            });
+
+            initOcean();
+            animateOcean();
+            window.addEventListener('resize', initOcean);
+
+
+            const biasCtx = document.getElementById('biasChart').getContext('2d');
+            const fullData = {
+                labels: ['Cielo Azul', 'Cielo Gris', 'Cielo Naranja'],
+                datasets: [{
+                    label: 'Observaciones del Cielo',
+                    data: [85, 10, 5],
+                    backgroundColor: ['#008CBA', '#9E9E9E', '#FF8C42'],
+                }]
+            };
+            const biasedData = {
+                labels: ['Cielo Azul', 'Cielo Gris', 'Cielo Naranja'],
+                datasets: [{
+                    label: 'Observaciones del Cielo (Sesgado)',
+                    data: [5, 95, 0],
+                    backgroundColor: ['#008CBA', '#9E9E9E', '#FF8C42'],
+                }]
+            };
+
+            const biasChart = new Chart(biasCtx, {
+                type: 'bar',
+                data: fullData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Dataset Completo del Color del Cielo' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, max: 100 }
+                    }
+                }
+            });
+
+            document.getElementById('fullDataButton').addEventListener('click', () => {
+                biasChart.data = fullData;
+                biasChart.options.plugins.title.text = 'Dataset Completo del Color del Cielo';
+                biasChart.update();
+            });
+
+            document.getElementById('biasedDataButton').addEventListener('click', () => {
+                biasChart.data = biasedData;
+                biasChart.options.plugins.title.text = 'Dataset Sesgado (Solo Días Nublados)';
+                biasChart.update();
+            });
+
+
+            const generateButton = document.getElementById('generateButton');
+            const responseText = document.getElementById('responseText');
+            const responseCanvas = document.getElementById('responseCanvas');
+            const responseCtx = responseCanvas.getContext('2d');
+
+            generateButton.addEventListener('click', () => {
+                responseText.style.opacity = '0';
+                responseCanvas.style.opacity = '0';
+                
+                setTimeout(() => {
+                    responseText.innerHTML = "<strong>Respuesta de Dato:</strong> El cielo es azul porque la atmósfera dispersa la luz solar. La luz azul, al tener una longitud de onda más corta, se dispersa más que otros colores, llenando el cielo con su color.";
+                    responseText.style.opacity = '1';
+                }, 300);
+
+                setTimeout(() => {
+                    resizeCanvas(responseCanvas);
+                    responseCtx.clearRect(0, 0, responseCanvas.width, responseCanvas.height);
+                    
+                    responseCtx.fillStyle = '#87CEEB';
+                    responseCtx.fillRect(0, 0, responseCanvas.width, responseCanvas.height);
+                    
+                    responseCtx.fillStyle = '#FFD700';
+                    responseCtx.beginPath();
+                    responseCtx.arc(responseCanvas.width * 0.1, responseCanvas.height * 0.2, 20, 0, Math.PI * 2);
+                    responseCtx.fill();
+                    
+                    responseCanvas.style.opacity = '1';
+                }, 800);
+            });
+        });
+    </script>
+</body>
+</html>
